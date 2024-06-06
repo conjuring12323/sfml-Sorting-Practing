@@ -2,166 +2,19 @@
 //--------------------------------Merge + Heap sort----------------------------------
 #include <SFML/Graphics.hpp>
 #include <vector>
-#include <cstdlib>
-#include <ctime>
 #include <iostream>
-#include <tuple>
-
-using namespace sf;
-using namespace std;
-
-struct Bar 
-{
-    int height;
-    Color color;
-};
+#include "SortingAlgorithms.h"
 
 const int numBars = 800;
 const int windowHeight = 600;
 const int windowWidth = 800;
-const int barWidth = windowWidth / numBars;
 
 vector<Bar> mergeSortBars(numBars);
 vector<Bar> heapSortBars(numBars);
 
-void generateRandomBars(vector<Bar>& bars)
+int main() 
 {
-    for (int i = 0; i < numBars; ++i)
-    {
-        bars[i].height = rand() % (windowHeight / 2);
-        bars[i].color = Color(rand() % 256, rand() % 256, rand() % 256);
-    }
-}
-
-void drawBars(RenderWindow& window, const vector<Bar>& bars, int yOffset) 
-{
-    for (int i = 0; i < numBars; ++i) 
-    {
-        RectangleShape rectangle(Vector2f(barWidth, bars[i].height));
-        rectangle.setFillColor(bars[i].color);
-        rectangle.setPosition(i * barWidth, windowHeight - yOffset - bars[i].height);
-        window.draw(rectangle);
-    }
-}
-
-void merge(vector<Bar>& bars, int l, int m, int r) 
-{
-    int n1 = m - l + 1;
-    int n2 = r - m;
-
-    vector<Bar> L(n1);
-    vector<Bar> R(n2);
-
-    for (int i = 0; i < n1; i++) 
-    {
-        L[i] = bars[l + i];
-    }
-    for (int i = 0; i < n2; i++)
-    {
-        R[i] = bars[m + 1 + i];
-    }
-
-    int i = 0, j = 0, k = l;
-    while (i < n1 && j < n2) 
-    {
-        if (L[i].height <= R[j].height) 
-        {
-            bars[k] = L[i];
-            i++;
-        }
-        else 
-        {
-            bars[k] = R[j];
-            j++;
-        }
-        k++;
-    }
-    while (i < n1) 
-    {
-        bars[k] = L[i];
-        i++;
-        k++;
-    }
-
-    while (j < n2)
-    {
-        bars[k] = R[j];
-        j++;
-        k++;
-    }
-}
-
-void mergeSortStep(vector<Bar>& bars, int& l, int& m, int& r, int& step) 
-{
-    static vector<tuple<int, int, int>> mergeRanges;
-    static int rangeIndex = 0;
-    if (step == 0) 
-    {
-        for (int sz = 1; sz <= numBars; sz = 2 * sz)
-        {
-            for (int l = 0; l < numBars - sz; l += 2 * sz) 
-            {
-                int m = l + sz - 1;
-                int r = min(l + sz + sz - 1, numBars - 1);
-                mergeRanges.emplace_back(l, m, r);
-            }
-        }
-        step = 1;
-    }
-
-    if (step == 1 && rangeIndex < mergeRanges.size())
-    {
-        tie(l, m, r) = mergeRanges[rangeIndex];
-        merge(bars, l, m, r);
-        rangeIndex++;
-    }
-    else
-    {
-        step = 2;
-    }
-}
-
-void heapify(vector<Bar>& bars, int n, int i)
-{
-    int largest = i;
-    int left = 2 * i + 1;
-    int right = 2 * i + 2;
-
-    if (left < n && bars[left].height > bars[largest].height)
-        largest = left;
-
-    if (right < n && bars[right].height > bars[largest].height)
-        largest = right;
-
-    if (largest != i)
-    {
-        swap(bars[i], bars[largest]);
-        heapify(bars, n, largest);
-    }
-}
-
-void heapSortStep(vector<Bar>& bars, int& i, int& n)
-{
-    if (i == 0)
-    {
-        for (int j = n / 2 - 1; j >= 0; j--)
-        {
-            heapify(bars, n, j);
-        }
-        i = n - 1;
-    }
-
-    if (i > 0)
-    {
-        swap(bars[0], bars[i]);
-        heapify(bars, i, 0);
-        i--;
-    }
-}
-
-int main()
-{
-    RenderWindow appWindow(VideoMode(windowWidth, windowHeight), "Sorting Algorithms Visualization");
+    RenderWindow appWindow(sf::VideoMode(windowWidth, windowHeight), "Sorting Algorithms Visualization");
 
     Font font;
     if (!font.loadFromFile("arial.ttf"))
@@ -177,16 +30,15 @@ int main()
     mergeSortText.setCharacterSize(24);
     heapSortText.setCharacterSize(24);
 
-    mergeSortText.setFillColor(Color::White);
-    heapSortText.setFillColor(Color::White);
+    mergeSortText.setFillColor(sf::Color::White);
+    heapSortText.setFillColor(sf::Color::White);
 
     mergeSortText.setPosition(10, 10);
     heapSortText.setPosition(10, windowHeight / 2 + 10);
 
-    srand(time(NULL));
-
-    generateRandomBars(mergeSortBars);
-    generateRandomBars(heapSortBars);
+    SortingAlgorithms sorter(numBars, windowHeight);
+    sorter.GenerateRandomBars(mergeSortBars);
+    sorter.GenerateRandomBars(heapSortBars);
 
     int heapSortI = 0;
     bool heapSortFinished = false;
@@ -199,7 +51,7 @@ int main()
     Clock heapSortClock, mergeSortClock;
     Time heapSortTime, mergeSortTime;
 
-    while (appWindow.isOpen())
+    while (appWindow.isOpen()) 
     {
         Event appEvent;
         while (appWindow.pollEvent(appEvent))
@@ -213,9 +65,9 @@ int main()
         if (!heapSortFinished)
         {
             heapSortClock.restart();
-            heapSortStep(heapSortBars, heapSortI, n);
+            sorter.HeapSortStep(heapSortBars, heapSortI, n);
             heapSortTime += heapSortClock.getElapsedTime();
-            if (heapSortI <= 0)
+            if (heapSortI <= 0) 
             {
                 heapSortFinished = true;
             }
@@ -224,7 +76,7 @@ int main()
         if (!mergeSortFinished)
         {
             mergeSortClock.restart();
-            mergeSortStep(mergeSortBars, mergeSortL, mergeSortM, mergeSortR, mergeSortStepCounter);
+            sorter.MergeSortStep(mergeSortBars, mergeSortL, mergeSortM, mergeSortR, mergeSortStepCounter);
             mergeSortTime += mergeSortClock.getElapsedTime();
             if (mergeSortStepCounter == 2) 
             {
@@ -232,11 +84,11 @@ int main()
             }
         }
 
-        if (mergeSortFinished) 
+        if (mergeSortFinished)
         {
             mergeSortText.setString("Merge Sort\nTime: " + to_string(mergeSortTime.asSeconds()) + " s\nComplexity: O(n log n)\nElements: " + to_string(numBars));
         }
-        else 
+        else
         {
             mergeSortText.setString("Merge Sort\nSorting...");
         }
@@ -253,8 +105,8 @@ int main()
         appWindow.clear(Color::Black);
         appWindow.draw(mergeSortText);
         appWindow.draw(heapSortText);
-        drawBars(appWindow, mergeSortBars, windowHeight / 2);
-        drawBars(appWindow, heapSortBars, 0);
+        sorter.DrawBars(appWindow, mergeSortBars, windowHeight / 2);
+        sorter.DrawBars(appWindow, heapSortBars, 0);
         appWindow.display();
     }
 
